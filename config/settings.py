@@ -41,6 +41,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # third party app
+    'tinymce',
+
     # local app
     'core',
     'email_sender',
@@ -135,3 +138,22 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+
+TINYMCE_DEFAULT_CONFIG = {
+    'height': 400,
+    'width': '100%',
+    'plugins': '''
+        advlist autolink lists link image charmap print preview hr anchor pagebreak
+        searchreplace wordcount visualblocks visualchars code fullscreen
+        insertdatetime media nonbreaking save table directionality
+        emoticons template paste textcolor colorpicker textpattern toc
+    ''',
+    'toolbar1': '''
+        blocks bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent |
+        link image media | forecolor backcolor emoticons | preview code fullscreen
+    ''',
+    'toolbar2': '''
+        cut copy paste | undo redo | table | hr removeformat | subscript superscript | charmap
+    ''',
+    'branding': False,
+}
