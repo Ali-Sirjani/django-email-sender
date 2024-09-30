@@ -14,3 +14,27 @@ class MsgRecord(TimestampedModel):
 
     def __str__(self):
         return self.subject
+
+
+class MsgRecordImage(TimestampedModel):
+    msg_record = models.ForeignKey(MsgRecord, on_delete=models.CASCADE, related_name='images',
+                                   verbose_name=_('record images'))
+
+    img = models.ImageField(upload_to='msg_record_images/', verbose_name=_('image'))
+
+    class Meta:
+        verbose_name = _('message record image')
+        verbose_name_plural = _('message record images')
+        ordering = ('datetime_created',)
+
+
+class MsgRecordFile(TimestampedModel):
+    msg_record = models.ForeignKey(MsgRecord, on_delete=models.CASCADE, related_name='files',
+                                   verbose_name=_('record images'))
+
+    file = models.FileField(upload_to='msg_record_files/', verbose_name=_('file'))
+
+    class Meta:
+        verbose_name = _('message record file')
+        verbose_name_plural = _('message record files')
+        ordering = ('datetime_created',)
