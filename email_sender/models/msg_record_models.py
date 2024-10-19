@@ -1,11 +1,17 @@
+import logging
+import smtplib
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.forms import modelformset_factory
+from django.core.mail import EmailMessage
 from django.contrib.auth import get_user_model
 
 from tinymce.models import HTMLField
 
 from ..abstracts import TimestampedModel
+
+logger = logging.getLogger(__name__)
 
 
 class Recipient(TimestampedModel):
@@ -45,6 +51,42 @@ class MsgRecord(TimestampedModel):
                 msg_img_obj = form.save(commit=False)
                 msg_img_obj.msg_record = self
                 msg_img_obj.save()
+
+    def send_email(self):
+        # Prepare the email
+        email = EmailMessage(
+            subject=self.subject,
+            body=self.message,
+            to=self.recipients.values_list('email', flat=True),
+        )
+
+        email.content_subtype = 'html'
+
+        # Attach images
+        for msg_img in self.images.all():
+            if msg_img.img:
+                img_path = msg_img.img.path
+                email.attach_file(img_path)
+
+        # Attach files
+        for msg_file in self.files.all():
+            if msg_file.file:
+                file_path = msg_file.file.path
+                email.attach_file(file_path)
+
+        try:
+            email.send(fail_silently=False)
+        except Exception as e:
+            if isinstance(e, smtplib.SMTPAuthenticationError):
+                logger.error(f"Failed to send email: {e}")
+            else:
+                logger.info(f"Failed to send email: {e}")
+            self.is_sent = False
+            raise
+        else:
+            self.is_sent = True
+
+        self.save()
 
 
 class MsgRecordImage(TimestampedModel):

@@ -126,7 +126,6 @@ STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = str(BASE_DIR.joinpath('media'))
 
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
@@ -135,12 +134,42 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # config custom user model
 AUTH_USER_MODEL = 'core.CustomUser'
 
+# config logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s %(message)s',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+            'filters': [],
+        },
+    },
+    'logger': {
+        logger_name: {
+            'level': 'WARNING',
+            'propagate': True,
+        } for logger_name in
+        ('django', 'django.request', 'django.db.backends', 'django.template', 'core', 'email_sender',)
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['console'],
+    },
+}
+
 # config for sending emails
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+EMAIL_HOST_USER = DEFAULT_FROM_EMAIL = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 
 TINYMCE_DEFAULT_CONFIG = {
