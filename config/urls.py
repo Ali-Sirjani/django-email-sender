@@ -22,6 +22,7 @@ from django.conf import settings
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('tinymce/', include('tinymce.urls')),
+    path('message-panel/', include('email_sender.urls')),
 ]
 
 if settings.DEBUG:
