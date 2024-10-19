@@ -1,1 +1,1 @@
-from .msg_record_models import (MsgRecord, MsgRecordImage, MsgRecordFile)
+from .msg_record_models import (Recipient, MsgRecord, MsgRecordImage, MsgRecordFile)

@@ -1,16 +1,34 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.forms import modelformset_factory
+from django.contrib.auth import get_user_model
 
 from tinymce.models import HTMLField
 
 from ..abstracts import TimestampedModel
 
 
+class Recipient(TimestampedModel):
+    user = models.OneToOneField(get_user_model(), on_delete=models.SET_NULL, null=True, blank=True,
+                                verbose_name=_('user'))
+
+    email = models.EmailField(unique=True, verbose_name=_('email'))
+
+    class Meta:
+        verbose_name = _('Recipient')
+        verbose_name_plural = _('Recipients')
+        ordering = ('-datetime_created',)
+
+    def __str__(self):
+        if self.user:
+            return f'{self.user}={self.email}'
+        return f'{self.email}'
+
+
 class MsgRecord(TimestampedModel):
     subject = models.CharField(max_length=255, verbose_name=_('subject'))
     message = HTMLField(verbose_name=_('message'))
-    recipients = models.JSONField(verbose_name=_('recipients'))
+    recipients = models.ManyToManyField(Recipient, related_name='recipients', verbose_name=_('recipients'))
     is_sent = models.BooleanField(default=False, verbose_name=_('is sent'))
 
     class Meta:
