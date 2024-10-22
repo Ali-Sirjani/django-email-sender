@@ -18,7 +18,7 @@ from .utils import DateTimeEncoder
 class MessagePanelView(LoginRequiredMixin, generic.ListView):
     model = MsgRecord
     paginate_by = 10
-    template_name = 'email_sender/panel_msg.html'
+    template_name = 'email_sender/msg_panel_template.html'
     context_object_name = 'messages'
     queryset = MsgRecord.objects.filter(is_sent=True)
 

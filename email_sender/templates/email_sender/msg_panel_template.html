@@ -1,0 +1,45 @@
+{% extends '_base.html' %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %} {% trans 'panel message' %} {% endblock title %}
+
+
+{% block content %}
+    <h3>Sent messages</h3>
+    <form id="id_search_form" method="get">
+        <input id="id_search_msg" name='q' type="text" placeholder="Enter word for search">
+        <button id="id_search_form_btn" type="button">Search</button>
+    </form>
+    <div id="id_block_msg">
+        {% include 'email_sender/_msg_sent_list.html' with messages=messages page_obj=page_obj %}
+    </div>
+
+    {% include 'email_sender/_pagination.html' with page_obj=page_obj area_label='messages' pagination_id='id_msg_pagination' %}
+
+    <br><br><br>
+
+    <form action="{% url 'email_sender:msg_panel_send' %}" method="post" enctype='multipart/form-data'>
+        {% csrf_token %}
+
+        <p>msg_record_img_formset</p>
+        {{ msg_record_img_formset.as_p }}
+
+        <p>msg_record_file_formset</p>
+        {{ msg_record_file_formset.as_p }}
+
+        <p>msg_record_form</p>
+        <head>
+            {{ msg_record_form.media }}
+
+        </head>
+        {{ msg_record_form.as_p }}
+        <input type="submit" value="enter">
+    </form>
+
+{% endblock content %}
+
+{% block extra_script %}
+    <script src="{% static '/js/msg_panel_script.js' %}"></script>
+{% endblock extra_script %}
