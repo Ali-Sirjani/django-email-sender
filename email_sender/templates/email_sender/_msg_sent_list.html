@@ -1,0 +1,3 @@
+{% for message in messages %}
+    <p><a href="#">{{ message.pk }}: {{ message.subject }} {{ message.datetime_created|date:"Y/m/d \a\t H:i" }}</a></p>
+{% endfor %}
