@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 
     # third party app
     'tinymce',
+    'django_filters',
 
     # local app
     'core',
