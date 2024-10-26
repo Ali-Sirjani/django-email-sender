@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from django.forms import modelformset_factory
 from django.core.mail import EmailMessage
 from django.contrib.auth import get_user_model
+from django.shortcuts import reverse
 
 from tinymce.models import HTMLField
 
@@ -44,6 +45,9 @@ class MsgRecord(TimestampedModel):
 
     def __str__(self):
         return self.subject
+
+    def get_absolute_url(self):
+        return reverse('email_sender:msg_detail', args=[self.pk])
 
     def save_attachments(self, formset, attr_name):
         for form in formset.forms:

@@ -52,10 +52,13 @@ class MessagePanelView(LoginRequiredMixin, generic.ListView):
             self.object_list = self.get_queryset()
             context = self.get_context_data(**kwargs)
             page_obj = context['page_obj']
+            msg_query = context['messages'].values('id', 'subject', 'datetime_created')
+
+            msg_list = [{**msg_obj, 'url': MsgRecord.objects.get(id=msg_obj['id']).get_absolute_url()} for msg_obj in
+                        msg_query]
 
             return JsonResponse({
-                'messages': json.dumps(list(context['messages'].values('id', 'subject', 'datetime_created')),
-                                       cls=DateTimeEncoder, date_format='%Y/%m/%d at %H:%M'),
+                'messages': json.dumps(msg_list, cls=DateTimeEncoder, date_format='%Y/%m/%d at %H:%M'),
                 'page': page_obj.number,
                 'total_pages': page_obj.paginator.num_pages,
                 'has_previous': page_obj.has_previous(),
