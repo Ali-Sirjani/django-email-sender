@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Function to dynamically render messages
-
     function renderMessages(messages) {
         const msgList = document.getElementById('id_block_msg');
         msgList.innerHTML = ''; // Clear the current message list
@@ -8,10 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
         messages.forEach(msg => {
             const msgItem = document.createElement('div');
             msgItem.classList.add('msg-item');
-            // let datetime_created = new Date(msg.datetime_created)
-            // console.log(datetime_created.getFullYear() + "-" + (datetime_created.getMonth()+1) + "-" + datetime_created.getDate() + " " + datetime_created.getHours() + ":" + datetime_created.getMinutes() + ":" + datetime_created.getSeconds());
+
             msgItem.innerHTML = `
-                <p><a href="#">${msg.id}: ${msg.subject} ${msg.datetime_created}</a></p>
+                <p><a href="${msg.url}">${msg.id}: ${msg.subject} ${msg.datetime_created}</a></p>
             `;
             msgList.appendChild(msgItem);
         });
@@ -118,4 +116,37 @@ document.addEventListener('DOMContentLoaded', () => {
         // Send the request to fetch the specified page
         sendRequestMsgList(currentUrl);
     });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const filterRecipientBtn = document.getElementById('id_recipient_form_btn')
+    filterRecipientBtn.addEventListener('click', async (e) => {
+        e.preventDefault()
+
+        const filterForm = document.getElementById('id_recipient_form')
+        const formData = new FormData(filterForm)
+        const params = new URLSearchParams(formData)
+
+        const filterUrl = `${filterForm.action}?${params.toString()}`
+        const response = await fetch(filterUrl)
+        if (!response.ok) {
+            throw new Error(`Response status: ${response.status}`)
+        }
+
+        const response_json = await response.json();
+        const pResult = document.getElementById('id_recipient_result')
+        if (!pResult.parentElement.classList.contains('show')) pResult.parentElement.classList.add('show')
+        pResult.innerHTML = ''
+        const users = JSON.parse(response_json.recipients);
+        users.forEach(recipient => {
+            pResult.innerHTML += `${recipient.username}:${recipient.email}, `
+        });
+    });
+
+    const copyFilterResultBtn = document.getElementById('id_copy_recipient_result')
+    copyFilterResultBtn.addEventListener('click', (e) => {
+        const pResult = document.getElementById('id_recipient_result')
+        navigator.clipboard.writeText(pResult.innerText)
+    });
+
 });

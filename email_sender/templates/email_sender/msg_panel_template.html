@@ -38,6 +38,16 @@
         <input type="submit" value="enter">
     </form>
 
+    <form action="{% url 'email_sender:filter_recipients' %}" method="get" id="id_recipient_form">
+        <p>filter form: </p>
+        {{ filter_recipient_form.as_p }}
+        <button type="button" id="id_recipient_form_btn">enter</button>
+    </form>
+    <div>
+        <p id="id_recipient_result"></p>
+        <button id="id_copy_recipient_result">copy</button>
+    </div>
+
 {% endblock content %}
 
 {% block extra_script %}
