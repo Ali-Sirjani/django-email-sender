@@ -3,16 +3,18 @@ import json
 from django.views import generic
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from django.db import transaction
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 from django.http import JsonResponse
+from django.db.models import F
 
-from .models import MsgRecord, MsgRecordImage, MsgRecordFile
+from .models import MsgRecord, MsgRecordImage, MsgRecordFile, Recipient
 from .forms import MsgRecordForm
 from .mixins import JSONResponseMixin
 from .utils import DateTimeEncoder
+from .filters import RecipientFilter
 
 
 class MessagePanelView(LoginRequiredMixin, generic.ListView):
@@ -38,6 +40,7 @@ class MessagePanelView(LoginRequiredMixin, generic.ListView):
             context['msg_record_img_formset'] = MsgRecordImage.get_img_formset()
             context['msg_record_file_formset'] = MsgRecordFile.get_file_formset()
             context['msg_record_form'] = MsgRecordForm()
+            context['filter_recipient_form'] = RecipientFilter().form
 
         return context
 
@@ -98,3 +101,18 @@ def send_and_save_mgs_view(request):
     }
 
     return json_mixin_obj.render_to_json_response(response_data, status=400)
+
+
+class MessageDetailView(generic.DetailView):
+    model = MsgRecord
+    template_name = 'email_sender/msg_detail.html'
+    context_object_name = 'msg_obj'
+
+
+@login_required
+@require_GET
+def filter_recipients_view(request):
+    json_mixin_obj = JSONResponseMixin()
+    filter_recipients = RecipientFilter(request.GET, Recipient.objects.all())
+    recipients_data = filter_recipients.qs.values('email', username=F('user__username'))
+    return json_mixin_obj.render_to_json_response({'recipients': json.dumps(list(recipients_data))})
