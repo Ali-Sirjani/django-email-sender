@@ -1,0 +1,38 @@
+{% extends '_base.html' %}
+
+{% load email_sender_filters %}
+
+{% block title %}{{ msg_obj.subject }}{% endblock title %}
+
+{% block content %}
+
+    <p>subject: {{ msg_obj.subject }}</p> <br>
+    <p>message: </p>
+    <div>{{ msg_obj.message|safe }}</div> <br>
+    <p>
+        <span>images</span>
+        <br> <br>
+        {% for img_obj in msg_obj.images.all %}
+            <img src="{{ img_obj.img.url }}" alt="" width="250" height="100">
+        {% endfor %}
+    </p> <br>
+    <p>
+        <span>files</span>
+        <br> <br>
+        {% for file_obj in msg_obj.files.all %}
+            <span>Download File: </span>
+            <a href="{{ file_obj.file.url }}" target="_blank">{{ file_obj.file|filename }}</a>
+            <br> <br>
+        {% endfor %}
+    </p> <br>
+    <p>
+        <span>recipients</span>
+        <br> <br>
+        {% for recipient in msg_obj.recipients.all %}
+            <span>{{ recipient.email }}, </span>
+        {% endfor %}
+    </p> <br>
+    <p>datetime_created: {{ msg_obj.datetime_created }}</p> <br>
+    <p>datetime_updated: {{ msg_obj.datetime_updated }}</p> <br>
+
+{% endblock content %}
