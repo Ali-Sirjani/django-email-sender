@@ -7,3 +7,4 @@ __pycache__
 core/migrations
 email_sender/migrations
 media/
+staticfiles/
