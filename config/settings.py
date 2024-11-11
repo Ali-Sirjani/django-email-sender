@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import environ
 
+from django.contrib.messages import constants as messages
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -41,8 +43,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # third party app
+    'tinymce',
+    'django_filters',
+    'crispy_forms',
+    'crispy_bootstrap5',
+    'debug_toolbar',
+
     # local app
     'core',
+    'email_sender',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +63,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # django-debug-toolbar
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -60,7 +72,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR.joinpath('templates'), ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -116,8 +128,13 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
-
 STATIC_URL = '/static/'
+STATICFILES_DIRS = (str(BASE_DIR.joinpath('static')),)
+STATIC_ROOT = str(BASE_DIR.joinpath('staticfiles'))
+
+# Media
+MEDIA_URL = '/media/'
+MEDIA_ROOT = str(BASE_DIR.joinpath('media'))
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -126,3 +143,76 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # config custom user model
 AUTH_USER_MODEL = 'core.CustomUser'
+
+# config logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s %(message)s',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+            'filters': [],
+        },
+    },
+    'logger': {
+        logger_name: {
+            'level': 'WARNING',
+            'propagate': True,
+        } for logger_name in
+        ('django', 'django.request', 'django.db.backends', 'django.template', 'core', 'email_sender',)
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['console'],
+    },
+}
+
+# config debug toolbar
+if DEBUG:
+    import socket
+
+    hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
+    INTERNAL_IPS = [ip[: ip.rfind(".")] + ".1" for ip in ips] + ["127.0.0.1", "10.0.2.2"]
+
+# config message framework
+MESSAGE_TAGS = {
+    messages.ERROR: 'danger',
+}
+
+# config for sending emails
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = DEFAULT_FROM_EMAIL = env('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+
+TINYMCE_DEFAULT_CONFIG = {
+    'height': 400,
+    'width': '100%',
+    'plugins': '''
+        advlist autolink lists link image charmap print preview hr anchor pagebreak
+        searchreplace wordcount visualblocks visualchars code fullscreen
+        insertdatetime media nonbreaking save table directionality
+        emoticons template paste textcolor colorpicker textpattern toc
+    ''',
+    'toolbar1': '''
+        blocks bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent |
+        link image media | forecolor backcolor emoticons | preview code fullscreen
+    ''',
+    'toolbar2': '''
+        cut copy paste | undo redo | table | hr removeformat | subscript superscript | charmap
+    ''',
+    'branding': False,
+}
+
+# config crispy-form
+CRISPY_TEMPLATE_PACK = 'bootstrap5'
+CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'

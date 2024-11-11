@@ -4,3 +4,7 @@ db.sqlite3
 *.pyc
 __pycache__
 .env
+core/migrations
+email_sender/migrations
+media/
+staticfiles/

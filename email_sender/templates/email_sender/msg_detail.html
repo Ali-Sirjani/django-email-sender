@@ -1,0 +1,58 @@
+{% extends '_base.html' %}
+
+{% load email_sender_filters %}
+
+{% block title %}{{ msg_obj.subject }}{% endblock title %}
+
+{% block content %}
+
+    <p class="mb-3">Subject: {{ msg_obj.subject }}</p>
+
+    <p>Message</p>
+    <div class="border rounded-4 p-3 mb-4">{{ msg_obj.message|safe }}</div>
+
+    <div class="mb-4">
+        <p class="m-1">Images</p>
+        {% if msg_obj.images.all %}
+            <div class="d-flex flex-wrap justify-content-center gap-3">
+                {% for img_obj in msg_obj.images.all %}
+                    <img src="{{ img_obj.img.url }}" alt="Image" class="img-thumbnail w-100 w-md-75 w-lg-25">
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted ps-4">No images available</p>
+        {% endif %}
+    </div>
+
+    <div class="mb-4">
+        <p class="m-1">Files</p>
+        {% if msg_obj.files.all %}
+            <ul class="list-unstyled">
+                {% for file_obj in msg_obj.files.all %}
+                    <li>
+                        <a href="{{ file_obj.file.url }}" target="_blank" class="text-decoration-none">
+                            <i class="fa-solid fa-download me-2"></i>{{ file_obj.file|filename }}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted ps-4">No files available</p>
+        {% endif %}
+    </div>
+
+    <div class="mb-4">
+        <p>Recipients</p>
+        <p class="recipient-list max-h-150 border rounded-4 p-2">
+            {% for recipient in msg_obj.recipients.all %}
+                <span class="recipient-item bg-secondary">{{ recipient.email }}</span>
+            {% endfor %}
+        </p>
+    </div>
+
+    <div class="text-muted">
+        <p><strong>Created:</strong> {{ msg_obj.datetime_created }}</p>
+        <p><strong>Updated:</strong> {{ msg_obj.datetime_updated }}</p>
+    </div>
+
+{% endblock content %}
