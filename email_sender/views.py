@@ -4,7 +4,6 @@ from django.views import generic
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_GET
-from django.db import transaction
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 from django.http import JsonResponse
@@ -21,7 +20,7 @@ class MessagePanelView(LoginRequiredMixin, generic.ListView):
     model = MsgRecord
     paginate_by = 10
     template_name = 'email_sender/msg_panel_template.html'
-    context_object_name = 'messages'
+    context_object_name = 'msg_list'
     queryset = MsgRecord.objects.filter(is_sent=True)
 
     def get_queryset(self):
@@ -52,13 +51,13 @@ class MessagePanelView(LoginRequiredMixin, generic.ListView):
             self.object_list = self.get_queryset()
             context = self.get_context_data(**kwargs)
             page_obj = context['page_obj']
-            msg_query = context['messages'].values('id', 'subject', 'datetime_created')
+            msg_query = context['msg_list'].values('id', 'subject', 'datetime_created')
 
             msg_list = [{**msg_obj, 'url': MsgRecord.objects.get(id=msg_obj['id']).get_absolute_url()} for msg_obj in
                         msg_query]
 
             return JsonResponse({
-                'messages': json.dumps(msg_list, cls=DateTimeEncoder, date_format='%Y/%m/%d at %H:%M'),
+                'msg_list': json.dumps(msg_list, cls=DateTimeEncoder, date_format='%Y/%m/%d at %H:%M'),
                 'page': page_obj.number,
                 'total_pages': page_obj.paginator.num_pages,
                 'has_previous': page_obj.has_previous(),
@@ -76,31 +75,22 @@ def send_and_save_mgs_view(request):
     json_mixin_obj = JSONResponseMixin()
 
     request_post, request_files = request.POST, request.FILES
+
     msg_form = MsgRecordForm(request_post)
     msg_img_formset = MsgRecordImage.get_img_formset(data=request_post, files=request_files)
     msg_file_formset = MsgRecordFile.get_file_formset(data=request_post, files=request_files)
 
-    if msg_form.is_valid() and msg_img_formset.is_valid() and msg_file_formset.is_valid():
-        with transaction.atomic():
-            # Save the message record
-            msg_obj = msg_form.save()
+    is_msg_send = MsgRecord.process_message(request_files.values(), msg_form, msg_img_formset, msg_file_formset)
 
-            # Save the attachments (images and files)
-            msg_obj.save_attachments(msg_img_formset, 'img')
-            msg_obj.save_attachments(msg_file_formset, 'file')
-
-            # Send the email after saving the message and attachments
-            msg_obj.send_email()
-
-            messages.success(request, _('Message successfully sent.'))
-            return json_mixin_obj.render_to_json_response({'message': 'success'})
+    if is_msg_send:
+        messages.success(request, _('Message successfully sent.'))
+        return json_mixin_obj.render_to_json_response({'message': 'success'})
 
     # Handle form and formset errors
     response_data = {
         'msg_form': json_mixin_obj.ajax_response_form(msg_form),
-        'msg_img_formset': [json_mixin_obj.ajax_response_form(msg_img_form) for msg_img_form in msg_img_formset.forms],
-        'msg_file_formset': [json_mixin_obj.ajax_response_form(msg_file_form) for msg_file_form in
-                             msg_file_formset.forms],
+        'msg_img_formset': [json_mixin_obj.ajax_response_form(f) for f in msg_img_formset.forms],
+        'msg_file_formset': [json_mixin_obj.ajax_response_form(f) for f in msg_file_formset.forms],
     }
 
     return json_mixin_obj.render_to_json_response(response_data, status=400)
@@ -110,6 +100,7 @@ class MessageDetailView(generic.DetailView):
     model = MsgRecord
     template_name = 'email_sender/msg_detail.html'
     context_object_name = 'msg_obj'
+    queryset = model.objects.prefetch_related('images', 'files')
 
 
 @login_required

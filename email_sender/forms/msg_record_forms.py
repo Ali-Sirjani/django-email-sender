@@ -104,6 +104,13 @@ class MsgRecordForm(forms.ModelForm):
 
         return recipients_list
 
+    def validate_files_size(self, request_files_values):
+        sum_size_files = sum([file.size / (1024 * 1024) for file in request_files_values])
+        if sum_size_files > 25:
+            self.add_error(None,
+                           _(f'The maximum of files with images must be 25 MB. total size: {sum_size_files:.2f} MB,'
+                             f' also you can add Google Drive link in the message.'))
+
 
 class MsgRecordImageForm(forms.ModelForm):
     img = forms.ImageField(label=_('image'), required=False)

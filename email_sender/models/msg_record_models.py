@@ -7,6 +7,7 @@ from django.forms import modelformset_factory
 from django.core.mail import EmailMessage
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
+from django.db import transaction
 
 from tinymce.models import HTMLField
 
@@ -91,6 +92,45 @@ class MsgRecord(TimestampedModel):
             self.is_sent = True
 
         self.save()
+
+    @classmethod
+    def process_message(cls, request_files_values, msg_form, msg_img_formset, msg_file_formset):
+        """
+        Processes the message record by validating forms, saving message data and attachments,
+        and sending an email.
+
+        Parameters:
+            request_files_values (iterable): An iterable of uploaded files, used to validate total file size.
+            msg_form (MsgRecordForm): The form containing message record data.
+            msg_img_formset (MsgRecordImageFormset): A formset for uploading image attachments.
+            msg_file_formset (MsgRecordFileFormset): A formset for uploading file attachments.
+
+        Returns:
+            bool: True if the message is successfully processed, False if any validation fails.
+        """
+
+        # Validate the total file size against the limit
+        msg_form.validate_files_size(request_files_values)
+
+        # Check if all forms are valid before proceeding
+        if msg_form.is_valid() and msg_img_formset.is_valid() and msg_file_formset.is_valid():
+            with transaction.atomic():
+                # Save the main message record from the form data
+                msg_obj = msg_form.save()
+
+                # Save image attachments linked to the message
+                msg_obj.save_attachments(msg_img_formset, 'img')
+
+                # Save file attachments linked to the message
+                msg_obj.save_attachments(msg_file_formset, 'file')
+
+                # Attempt to send the email with the saved message and attachments
+                msg_obj.send_email()
+
+                return True  # Indicate successful processing
+
+        # Return False if any of the forms fail validation
+        return False
 
 
 class MsgRecordImage(TimestampedModel):
