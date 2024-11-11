@@ -1,15 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Function to dynamically render messages
-    function renderMessages(messages) {
-        const msgList = document.getElementById('id_block_msg');
+    function renderMessages(msg_list) {
+        const msgList = document.querySelector('#id_block_msg .messages')
         msgList.innerHTML = ''; // Clear the current message list
 
-        messages.forEach(msg => {
+        msg_list.forEach(msg => {
             const msgItem = document.createElement('div');
-            msgItem.classList.add('msg-item');
 
             msgItem.innerHTML = `
-                <p><a href="${msg.url}">${msg.id}: ${msg.subject} ${msg.datetime_created}</a></p>
+                <p class="messages__item">
+                    <a href="${msg.url}" class="messages__item__link">${msg.id}: ${msg.subject} ${msg.datetime_created}</a>
+                </p>
             `;
             msgList.appendChild(msgItem);
         });
@@ -22,13 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.total_pages > 1) {
             if (data.has_previous) {
                 pagination.innerHTML += `
-                <li class="page-item">
-                    <a class="page-link" href="?page=1" aria-label="First">
+                <li class="page-item-cst">
+                    <a class="page-link-cst" href="?page=1" aria-label="First">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page=${data.previous_page_number}" aria-label="Previous">
+                <li class="page-item-cst">
+                    <a class="page-link-cst" href="?page=${data.previous_page_number}" aria-label="Previous">
                         <span aria-hidden="true">&lsaquo;</span>
                     </a>
                 </li>`;
@@ -36,21 +37,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             for (let i = 1; i <= data.total_pages; i++) {
                 if (i === data.page) {
-                    pagination.innerHTML += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+                    pagination.innerHTML += `<li class="page-item-cst active"><span class="page-link-cst">${i}</span></li>`;
                 } else {
-                    pagination.innerHTML += `<li class="page-item"><a class="page-link" href="?page=${i}">${i}</a></li>`;
+                    pagination.innerHTML += `<li class="page-item-cst"><a class="page-link-cst" href="?page=${i}">${i}</a></li>`;
                 }
             }
 
             if (data.has_next) {
                 pagination.innerHTML += `
-                <li class="page-item">
-                    <a class="page-link" href="?page=${data.next_page_number}" aria-label="Next">
+                <li class="page-item-cst">
+                    <a class="page-link-cst" href="?page=${data.next_page_number}" aria-label="Next">
                         <span aria-hidden="true">&rsaquo;</span>
                     </a>
                 </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page=${data.total_pages}" aria-label="Last">
+                <li class="page-item-cst">
+                    <a class="page-link-cst" href="?page=${data.total_pages}" aria-label="Last">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>`;
@@ -65,8 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
             type: 'GET',
             success: function (data) {
                 // Parse the messages and render them dynamically
-                const messages = JSON.parse(data.messages);
-                renderMessages(messages);
+                const msg_list = JSON.parse(data.msg_list);
+                renderMessages(msg_list);
 
                 // Render pagination dynamically
                 renderPagination(data);
@@ -139,7 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
         pResult.innerHTML = ''
         const users = JSON.parse(response_json.recipients);
         users.forEach(recipient => {
-            pResult.innerHTML += `${recipient.username}:${recipient.email}, `
+            let withUser = recipient.username ? `${recipient.username}:` : '';
+            pResult.innerHTML += `${withUser}${recipient.email}, `
         });
     });
 
@@ -150,3 +152,124 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 });
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const msgSendFormBtn = document.getElementById('id_msg_send_form_btn')
+    msgSendFormBtn.addEventListener('click', async (e) => {
+        e.preventDefault()
+
+        const spinnerBtn = msgSendFormBtn.querySelector('.spinner-border')
+        const spanTextBtn = msgSendFormBtn.querySelector('[role=status]')
+
+        msgSendFormBtn.setAttribute('disabled', '')
+        spinnerBtn.classList.remove('d-none')
+        spanTextBtn.innerText = 'Sending...'
+
+        if (typeof tinyMCE !== 'undefined') {
+            tinyMCE.triggerSave();
+        }
+        const msgSendFrom = document.getElementById('id_msg_send_form')
+
+        const csrftoken = getCookie('csrftoken');
+        let sendUrl = msgSendFrom.action
+        const formData = new FormData(msgSendFrom);
+        Array.from(document.querySelectorAll('.is-invalid')).forEach(element => {
+            element.classList.remove('is-invalid')
+        })
+        Array.from(document.querySelectorAll('.invalid-feedback')).forEach(element => {
+            element.classList.remove('d-block')
+        })
+
+        const response = await fetch(sendUrl, {
+            method: msgSendFrom.method,
+            body: formData,
+            headers: {'X-CSRFToken': formData.get('csrfmiddlewaretoken')},
+        })
+
+        if (!response.ok) {
+            const formBlockErrors = msgSendFrom.querySelector('#id_msg_form_errors')
+            try {
+                const errorData = await response.json();
+
+                handleFormErrors(formBlockErrors, errorData);
+            } catch (e) {
+                const errorServer = 'Email can\'t send for these reason: \n 1. Check you internet and if you can ' +
+                    'connect to vpn \n 2. The server of site is not work correctly '
+                addNoneFieldError(errorServer, formBlockErrors)
+                formBlockErrors.classList.remove('d-none')
+            }
+
+            setTimeout(() => {
+                msgSendFormBtn.removeAttribute('disabled')
+                spinnerBtn.classList.add('d-none')
+                spanTextBtn.innerText = 'Send'
+            }, 300)
+            return;
+        }
+
+        location.reload();
+    })
+});
+
+function handleFormErrors(formBlockErrors, errorData) {
+    formBlockErrors.innerHTML = ''
+
+    for (const form in errorData) {
+        let formData = errorData[form]
+
+        if (formData.length) {
+            for (const formOfFormsetKey in formData) {
+                let formOfFormset = formData[formOfFormsetKey]
+                if (formOfFormset.errors) {
+                    for (const error of formOfFormset.errors) {
+                        addNoneFieldError(error, formBlockErrors)
+                    }
+                }
+                const fieldsOfForm = formOfFormset['fields']
+
+                for (const fieldKey in fieldsOfForm) {
+                    if (fieldsOfForm[fieldKey].errors.length) {
+                        addErrorMessage(fieldsOfForm[fieldKey], fieldKey)
+                    }
+                }
+            }
+        } else {
+            if (formData.errors) {
+                for (const error of formData.errors) {
+                    addNoneFieldError(error, formBlockErrors)
+                }
+            }
+            for (const fieldKey in formData['fields']) {
+                if (formData['fields'][fieldKey].errors.length) {
+                    addErrorMessage(formData['fields'][fieldKey], fieldKey)
+                }
+            }
+        }
+    }
+
+    if (formBlockErrors.innerText) {
+        formBlockErrors.classList.remove('d-none')
+    }
+
+}
+
+function addNoneFieldError(message, formBlockErrors) {
+    const newNoneError = document.createElement('div');
+    newNoneError.classList = formBlockErrors.dataset.childClass
+    newNoneError.textContent = `${formBlockErrors.dataset.startWith}${message}`;
+    formBlockErrors.appendChild(newNoneError);
+}
+
+function addErrorMessage(field, fieldName) {
+    const fieldError = document.getElementById(`id_${fieldName}`)
+    const fieldBoxMsg = document.getElementById(`id_${fieldName}_feedback`)
+
+    fieldError.classList.add('is-invalid')
+    fieldError.setAttribute('aria-invalid', 'true')
+    fieldBoxMsg.innerHTML = ''
+    fieldBoxMsg.classList.add('mb-4', 'invalid-feedback', 'd-block')
+    for (const error of field.errors) {
+        fieldBoxMsg.innerHTML += `<strong>${error}</strong>`
+    }
+}
