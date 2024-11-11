@@ -9,11 +9,15 @@ from ..models import Recipient, MsgRecord, MsgRecordImage, MsgRecordFile
 
 
 class MsgRecordForm(forms.ModelForm):
-    recipients = forms.CharField(widget=forms.Textarea, required=True, help_text="Enter emails separated by commas")
+    recipients = forms.CharField(widget=forms.Textarea, required=True)
 
     class Meta:
         model = MsgRecord
         exclude = ('is_sent',)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['subject'].widget.attrs['class'] = 'w-100 w-sm-50 '
 
     def clean_recipients(self):
         # Clean the raw input from 'recipients', removing spaces, newlines, and carriage returns
@@ -113,7 +117,7 @@ class MsgRecordForm(forms.ModelForm):
 
 
 class MsgRecordImageForm(forms.ModelForm):
-    img = forms.ImageField(label=_('image'), required=False)
+    img = forms.ImageField(label='', required=False)
 
     class Meta:
         model = MsgRecordImage
@@ -127,7 +131,7 @@ class MsgRecordImageForm(forms.ModelForm):
 
 
 class MsgRecordFileForm(forms.ModelForm):
-    file = forms.FileField(label=_('file'), required=False)
+    file = forms.FileField(label='', required=False)
 
     class Meta:
         model = MsgRecordFile

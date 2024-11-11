@@ -2,51 +2,146 @@
 
 {% load static %}
 {% load i18n %}
+{% load crispy_forms_filters %}
 
 {% block title %} {% trans 'panel message' %} {% endblock title %}
 
-
 {% block content %}
-    <h3>Sent messages</h3>
-    <form id="id_search_form" method="get">
-        <input id="id_search_msg" name='q' type="text" placeholder="Enter word for search">
-        <button id="id_search_form_btn" type="button">Search</button>
-    </form>
-    <div id="id_block_msg">
-        {% include 'email_sender/_msg_sent_list.html' with messages=messages page_obj=page_obj %}
+    <!-- message section start -->
+    <section id="msg_list" class="nav-section mb-4">
+        <!-- search form start -->
+        <form id="id_search_form" method="get" class="mb-4">
+            <div class="row g-2">
+                <div class="col-8 col-md-6 col-lg-5">
+                    <input id="id_search_msg" name='q' type="text" class="textinput form-control"
+                           placeholder="Enter word for search">
+                </div>
+                <div class="col">
+                    <button class="btn-cst btn--outline-primary-cst" id="id_search_form_btn" type="button">Search
+                    </button>
+                </div>
+            </div>
+        </form>
+        <!-- search form end -->
+
+        <!-- message list start -->
+        <div id="id_block_msg">
+            {% include 'email_sender/_msg_sent_list.html' with msg_list=msg_list page_obj=page_obj %}
+        </div>
+
+        {% include 'email_sender/_pagination.html' with page_obj=page_obj area_label='messages' pagination_id='id_msg_pagination' %}
+        <!-- message list end -->
+    </section>
+    <!-- message section end -->
+
+    <!-- form send section start -->
+    <section id="msg_form" class="nav-section d-none">
+        <!-- form send start -->
+        <h2 class="mb-3">Send Message Form</h2>
+        <form action="{% url 'email_sender:msg_panel_send' %}" method="post" id="id_msg_send_form"
+              enctype='multipart/form-data' class="form mb-3">
+            {% csrf_token %}
+            <div id="id_msg_form_errors" data-child-class="invalid-feedback d-block fw-bold rounded-4"
+                 data-start-with="- " class="d-none mb-3"></div>
+            {% for field in msg_record_form %}
+                {% if field.name == 'recipients' %}
+                    <div class="row">
+                        <div class="col-12 col-sm-6">
+                            {{ field|as_crispy_field }}
+                            <div id="id_{{ field.name }}_feedback"></div>
+                        </div>
+                        <div class="col-12 col-sm-6 pt-sm-5">
+                            <div class="help-text">
+                                <h5 class="help-text__title">Recipient Entry Guide</h5>
+                                <p class="mb-1 ps-3">
+                                    <strong>Accepted Formats:</strong> Enter recipients as <code>username:email</code>
+                                    (e.g., <code>john:john@example.com</code>) or simply an email (e.g., <code>test@example.com</code>).
+                                </p>
+                                <p class="mb-1 ps-3">
+                                    <strong>Multiple Entries:</strong> Separate recipients with commas (e.g., <code>user1@example.com,
+                                    user2@example.com</code>).
+                                </p>
+                                <p>
+                                    <strong>Need to filter recipients?</strong> Use the
+                                    <a type="button" class="link-primary" data-bs-toggle="modal"
+                                       data-bs-target="#recipientFilterModal">
+                                        Recipient Filter Form
+                                    </a>
+                                    to find and select specific recipients easily.
+                                </p>
+                            </div>
+
+                        </div>
+                    </div>
+                {% else %}
+                    {{ field|as_crispy_field }}
+                    <div id="id_{{ field.name }}_feedback"></div>
+                {% endif %}
+            {% endfor %}
+            <head>
+                {{ msg_record_form.media }}
+            </head>
+            <div class="row my-4 gy-3">
+                <div class="col-12 col-sm-6">
+                    <div class="mb-2">
+                        <p class="form-title">Message Image</p>
+                    </div>
+                    {{ msg_record_img_formset.management_form|crispy }}
+                    {% for form in msg_record_img_formset %}
+                        {% for field in form %}
+                            {{ field|as_crispy_field }}
+                            <div id="id_{{ form.prefix }}-{{ field.name }}_feedback"></div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+                <div class="col-12 col-sm-6">
+                    <div class="mb-2">
+                        <p class="form-title">Message File</p>
+                    </div>
+                    {{ msg_record_file_formset.management_form|crispy }}
+                    {% for form in msg_record_file_formset %}
+                        {% for field in form %}
+                            {{ field|as_crispy_field }}
+                            <div id="id_{{ form.prefix }}-{{ field.name }}_feedback"></div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+            <button type="button" class="btn-cst btn--primary-cst d-flex align-items-center" id="id_msg_send_form_btn">
+                <span class="spinner-border me-2 d-none" aria-hidden="true"></span>
+                <span role="status">Send</span>
+            </button>
+        </form>
+        <!-- form send end -->
+    </section>
+    <!-- form send section end -->
+
+    <!-- filter recipients modal start -->
+    <div class="modal fade" id="recipientFilterModal" tabindex="-1" aria-labelledby="recipientFilterModal"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header p-4">
+                    <h5 class="modal-title h1">Filter Form</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form action="{% url 'email_sender:filter_recipients' %}" method="get" id="id_recipient_form"
+                          class="mb-3">
+                        {{ filter_recipient_form|crispy }}
+                        <button class="btn-cst btn--outline-primary-cst" type="button" id="id_recipient_form_btn">
+                            enter
+                        </button>
+                    </form>
+                    <div class="fade">
+                        <p class="border rounded-4 py-2 px-3 max-h-150" id="id_recipient_result"></p>
+                        <button class="btn-cst btn--primary-cst" id="id_copy_recipient_result">copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
-    {% include 'email_sender/_pagination.html' with page_obj=page_obj area_label='messages' pagination_id='id_msg_pagination' %}
-
-    <br><br><br>
-
-    <form action="{% url 'email_sender:msg_panel_send' %}" method="post" enctype='multipart/form-data'>
-        {% csrf_token %}
-
-        <p>msg_record_img_formset</p>
-        {{ msg_record_img_formset.as_p }}
-
-        <p>msg_record_file_formset</p>
-        {{ msg_record_file_formset.as_p }}
-
-        <p>msg_record_form</p>
-        <head>
-            {{ msg_record_form.media }}
-
-        </head>
-        {{ msg_record_form.as_p }}
-        <input type="submit" value="enter">
-    </form>
-
-    <form action="{% url 'email_sender:filter_recipients' %}" method="get" id="id_recipient_form">
-        <p>filter form: </p>
-        {{ filter_recipient_form.as_p }}
-        <button type="button" id="id_recipient_form_btn">enter</button>
-    </form>
-    <div>
-        <p id="id_recipient_result"></p>
-        <button id="id_copy_recipient_result">copy</button>
-    </div>
+    <!-- filter recipients modal end -->
 
 {% endblock content %}
 
