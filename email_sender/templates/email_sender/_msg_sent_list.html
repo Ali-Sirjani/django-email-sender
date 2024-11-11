@@ -1,5 +1,7 @@
-{% for message in messages %}
-    <p>
-        <a href="{{ message.get_absolute_url }}">{{ message.pk }}: {{ message.subject }} {{ message.datetime_created|date:"Y/m/d \a\t H:i" }}</a>
-    </p>
-{% endfor %}
+<div class="messages">
+    {% for message in msg_list %}
+        <p class="messages__item">
+            <a href="{{ message.get_absolute_url }}" class="messages__item__link">{{ message.pk }}: {{ message.subject }} {{ message.datetime_created|date:"Y/m/d \a\t H:i" }}</a>
+        </p>
+    {% endfor %}
+</div>
